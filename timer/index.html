@@ -1,0 +1,57 @@
+﻿<!DOCTYPE html>
+<html>
+	<head>
+		<style>
+			body {
+				text-align:center;
+				font-family: Verdana, sans-serif;
+			}
+			
+			h1 {
+				font-size:50px;
+				-webkit-text-stroke: 2px black;
+				-webkit-text-fill-color: white;
+			}
+		</style>
+	</head>
+	
+	<body style="background-color:Lime">
+		<h1 id="demo"><b></b></h1>
+		<h1><b>Problems solved:</b></h1>
+		<h1 id="cnt"><b></b></h1>
+
+		<button onclick="start()" style="font-size:150%">Start</button>
+		<button onclick="plus()" style="font-size:150%"> AC++</button>
+		<button onclick="minus()" style="font-size:150%">AC--</button>
+		<script>
+			var start_time;
+			var ouo = 0;
+			var clock = setInterval(run , 1);
+			function run() {
+			  var d = new Date();
+			  var now = d.getTime();
+			  var ms = now-start_time;
+			  var nms = Math.floor((ms%1000/10)).toString().padStart(2, 0);
+			  var s = Math.floor(ms/1000);
+			  var ns = (s%60).toString().padStart(2, 0);
+			  var m = Math.floor(s/60);
+			  var nm = (m%60).toString().padStart(2, 0);
+			  var hr = Math.floor(m/60);
+			  var nhr = (hr%24).toString().padStart(2, 0);
+			  document.getElementById("demo").innerText = nhr + ":" + nm + ":" + ns + "." + nms;
+			  document.getElementById("cnt").innerText = ouo;
+			}
+
+			function plus() {
+				ouo += 1;
+			}
+			function minus() {
+				ouo -= 1;
+			}
+			function start() {
+				var d = new Date();
+				start_time = d.getTime();
+			}
+		</script>
+	</body>
+</html>
