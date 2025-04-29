@@ -1,0 +1,311 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>桌邊接發球腳步練習</title>
+  <style>
+    :root {
+      --bg-color: #000;
+      --text-color: #fff;
+      --input-bg: #222;
+      --input-border: #555;
+      --btn-bg: #333;
+      --btn-hover: #555;
+    }
+    body {
+      font-family: sans-serif;
+      background: var(--bg-color);
+      color: var(--text-color);
+      text-align: center;
+      padding: 2rem;
+    }
+    #settings, #practice {
+      max-width: 500px;
+      margin: auto;
+    }
+    .setting-row {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: .8rem;
+    }
+    .setting-row label {
+      width: 6rem;
+      text-align: right;
+      margin-right: .5rem;
+      white-space: nowrap;
+    }
+    .setting-row input[type="number"] {
+      width: 4rem;
+      padding: .4rem;
+      background: var(--input-bg);
+      border: 1px solid var(--input-border);
+      color: var(--text-color);
+      border-radius: .25rem;
+      margin: 0;
+    }
+    .nowrap {
+      white-space: nowrap;
+    }
+    button {
+      font-size: 1rem;
+      margin: .5rem;
+      padding: .5rem 1rem;
+      background: var(--btn-bg);
+      border: none;
+      border-radius: .25rem;
+      color: var(--text-color);
+      cursor: pointer;
+    }
+    button:hover { background: var(--btn-hover); }
+    .prompt-row {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: .5rem;
+    }
+    .prompt-row input.text {
+      flex: 1;
+      max-width: 120px;
+      padding: .4rem;
+      background: var(--input-bg);
+      border: 1px solid var(--input-border);
+      color: var(--text-color);
+      border-radius: .25rem;
+      margin-right: .5rem;
+      text-align: center;
+    }
+    .prompt-row input.weight {
+      width: 60px;
+      padding: .4rem;
+      background: var(--input-bg);
+      border: 1px solid var(--input-border);
+      color: var(--text-color);
+      border-radius: .25rem;
+      margin-right: .5rem;
+      text-align: center;
+    }
+    .prompt-row input.color {
+      width: 40px;
+      padding: 0;
+      background: var(--input-bg);
+      border: 1px solid var(--input-border);
+      margin-right: .5rem;
+    }
+    .prompt-row button.removeBtn {
+      background: #a00;
+    }
+    #prompt { min-height: 6rem; }
+    .prompt-item {
+      font-size: 4rem;
+      display: inline-block;
+      animation: pulse 0.6s ease-in-out;
+    }
+    .prompt-subtext {
+      font-size: 1.2rem;
+      opacity: 0.7;
+      margin-top: 0.3rem;
+    }
+    @keyframes pulse {
+      0% { transform: scale(1); opacity:1; }
+      50% { transform: scale(1.2); opacity:.8; }
+      100% { transform: scale(1); opacity:1; }
+    }
+    #countdown { font-size: 2rem; margin-bottom: 1rem; }
+    #progress { margin-top: 1rem; font-size: 1rem; }
+    #controls { margin-top: 1rem; }
+  </style>
+</head>
+<body>
+  <h1>桌邊接發球腳步練習</h1>
+  <div id="settings">
+    <div class="setting-row">
+      <label for="interval">提示間隔<span class="nowrap">(秒)</span>：</label>
+      <input type="number" id="interval" value="2" min="0.5" step="0.5">
+    </div>
+    <div class="setting-row">
+      <label for="rounds">練習次數：</label>
+      <input type="number" id="rounds" value="30" min="1">
+    </div>
+    <h2>主提示列表</h2>
+    <div id="main-prompt-list"></div>
+    <button id="addMainBtn">新增主提示</button>
+    <h2>次提示列表 (可選)</h2>
+    <div id="sub-prompt-list"></div>
+    <button id="addSubBtn">新增次提示</button>
+    <button id="startBtn">開始練習</button>
+  </div>
+
+  <div id="practice" style="display:none;">
+    <div id="countdown"></div>
+    <div id="prompt"></div>
+    <div id="progress"></div>
+    <div id="controls">
+      <button id="pauseBtn">暫停</button>
+      <button id="backBtn">返回設定</button>
+    </div>
+  </div>
+
+  <script>
+    const settings = document.getElementById('settings');
+    const practice = document.getElementById('practice');
+    const countdownEl = document.getElementById('countdown');
+    const promptEl = document.getElementById('prompt');
+    const progressEl = document.getElementById('progress');
+    const mainList = document.getElementById('main-prompt-list');
+    const subList = document.getElementById('sub-prompt-list');
+    const addMain = document.getElementById('addMainBtn');
+    const addSub = document.getElementById('addSubBtn');
+    const startBtn = document.getElementById('startBtn');
+    const pauseBtn = document.getElementById('pauseBtn');
+    const backBtn = document.getElementById('backBtn');
+
+    let intervalTime = 2000;
+    let totalRounds = 30;
+    let count = 0;
+    let paused = false;
+    let timerId;
+    let isCountingDown = false;
+    let countdownSec = 0;
+    let countdownCallback = null;
+    let mainPrompts = [];
+    let subPrompts = [];
+
+    function createRow(list, isMain, text = '', weight = 0, color = '#fff') {
+      const row = document.createElement('div');
+      row.className = 'prompt-row';
+      row.innerHTML = `
+        <input type="text" class="text" placeholder="${isMain?'主提示':'次提示'}" value="${text}">
+        <input type="number" class="weight" placeholder="權重%" value="${weight}" min="0" max="100">
+        ${isMain?`<input type="color" class="color" value="${color}">`:`<input type="color" class="color" style="visibility:hidden">`}
+        <button type="button" class="removeBtn">刪除</button>
+      `;
+      row.querySelector('.removeBtn').addEventListener('click', () => row.remove());
+      list.appendChild(row);
+    }
+
+    // 初始
+    createRow(mainList, true, '左', 33, '#E53935');
+    createRow(mainList, true, '中', 34, '#FDD835');
+    createRow(mainList, true, '右', 33, '#1E88E5');
+    createRow(subList, false, '短', 50);
+    createRow(subList, false, '長', 50);
+
+    addMain.addEventListener('click', () => createRow(mainList, true));
+    addSub.addEventListener('click', () => createRow(subList, false));
+
+    function beep() {
+      const ctx = new (window.AudioContext || window.webkitAudioContext)();
+      const o = ctx.createOscillator();
+      o.connect(ctx.destination);
+      o.start();
+      setTimeout(() => o.stop(), 100);
+    }
+
+    startBtn.addEventListener('click', () => {
+      intervalTime = parseFloat(document.getElementById('interval').value) * 1000;
+      totalRounds = parseInt(document.getElementById('rounds').value, 10);
+
+      mainPrompts = Array.from(mainList.querySelectorAll('.prompt-row')).map(r => ({
+        text: r.querySelector('.text').value,
+        weight: parseFloat(r.querySelector('.weight').value) || 0,
+        color: r.querySelector('.color').value
+      }));
+      subPrompts = Array.from(subList.querySelectorAll('.prompt-row')).map(r => ({
+        text: r.querySelector('.text').value,
+        weight: parseFloat(r.querySelector('.weight').value) || 0
+      }));
+
+      if (!mainPrompts.length) { alert('請至少新增主提示'); return; }
+      const sumMain = mainPrompts.reduce((s, p) => s + p.weight, 0);
+      if (sumMain !== 100) { alert(`主提示權重 ${sumMain}%，需 100%。`); return; }
+      if (subPrompts.length) {
+        const sumSub = subPrompts.reduce((s, p) => s + p.weight, 0);
+        if (sumSub !== 100) { alert(`次提示權重 ${sumSub}%，需 100%。`); return; }
+      }
+
+      settings.style.display = 'none';
+      practice.style.display = 'block';
+      count = 0;
+      paused = false;
+      pauseBtn.textContent = '暫停';
+      startCountdown(3, showRound);
+    });
+
+    pauseBtn.addEventListener('click', () => {
+      if (!paused) {
+        clearTimeout(timerId);
+        paused = true;
+        pauseBtn.textContent = '繼續';
+      } else {
+        paused = false;
+        pauseBtn.textContent = '暫停';
+        if (isCountingDown) countdownTick(); else showRound();
+      }
+    });
+
+    backBtn.addEventListener('click', () => {
+      clearTimeout(timerId);
+      paused = false;
+      count = 0;
+      isCountingDown = false;
+      countdownSec = 0;
+      countdownCallback = null;
+      countdownEl.textContent = '';
+      promptEl.textContent = '';
+      progressEl.textContent = '';
+      practice.style.display = 'none';
+      settings.style.display = 'block';
+    });
+
+    function startCountdown(sec, cb) {
+      isCountingDown = true;
+      countdownSec = sec;
+      countdownCallback = cb;
+      countdownTick();
+    }
+    function countdownTick() {
+      if (countdownSec > 0) {
+        countdownEl.textContent = `準備：${countdownSec}`;
+        countdownSec--;
+        if (!paused) timerId = setTimeout(countdownTick, 1000);
+      } else {
+        countdownEl.textContent = '';
+        isCountingDown = false;
+        countdownCallback();
+      }
+    }
+
+    function showRound() {
+      if (paused) return;
+      if (count >= totalRounds) {
+        promptEl.textContent = '完成！';
+        progressEl.textContent = `${totalRounds}/${totalRounds}`;
+        return;
+      }
+      progressEl.textContent = `${count + 1}/${totalRounds}`;
+      const main = randomChoice(mainPrompts);
+      const sub = subPrompts.length ? randomChoice(subPrompts) : { text: '' };
+      promptEl.innerHTML = `
+        <div class="prompt-item" style="color:${main.color}">${main.text}</div>
+        ${sub.text ? `<div class="prompt-subtext">${sub.text}</div>` : ''}
+      `;
+      beep();
+      count++;
+      timerId = setTimeout(showRound, intervalTime);
+    }
+
+    function randomChoice(items) {
+      if (!Array.isArray(items) || !items.length) return { text: '', weight: 0, color: '#fff' };
+      let sum = items.reduce((a, b) => a + (b.weight || 0), 0);
+      let r = Math.random() * sum;
+      for (const it of items) {
+        if (r < it.weight) return it;
+        r -= it.weight;
+      }
+      return items[items.length - 1];
+    }
+  </script>
+</body>
+</html>
