@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>桌邊接發腳步練習</title>
+  <style>
+    :root {
+      --bg-color: #000000;
+      --text-color: #FFFFFF;
+      --prompt-left-color: #E53935;   /* 紅色，辨識度高 */
+      --prompt-front-color: #FDD835;  /* 琥珀黃，視覺聚焦 */
+      --prompt-right-color: #1E88E5;  /* 藍色，對比明顯 */
+    }
+    body {
+      font-family: sans-serif;
+      background-color: var(--bg-color);
+      color: var(--text-color);
+      text-align: center;
+      padding: 2rem;
+    }
+    #settings, #practice {
+      max-width: 400px;
+      margin: auto;
+    }
+    button {
+      padding: .5rem 1rem;
+      font-size: 1rem;
+      cursor: pointer;
+      background: #333333;
+      border: none;
+      color: var(--text-color);
+      border-radius: .25rem;
+    }
+    button:hover {
+      background: #555555;
+    }
+    #prompt {
+      font-size: 4rem;
+      margin: 2rem 0;
+    }
+    #prompt .left { color: var(--prompt-left-color); }
+    #prompt .front { color: var(--prompt-front-color); }
+    #prompt .right { color: var(--prompt-right-color); }
+    input {
+      width: 60px;
+      text-align: center;
+      border: 1px solid #555;
+      background: #222;
+      color: var(--text-color);
+      border-radius: .25rem;
+      padding: .25rem;
+    }
+  </style>
+</head>
+<body>
+  <h1>桌邊接發腳步練習</h1>
+  <div id="settings">
+    <label>提示間隔(秒)：<input type="number" id="interval" value="2" min="0.5" step="0.5"></label><br><br>
+    <label>練習次數：<input type="number" id="rounds" value="30" min="1"></label><br><br>
+    <div>
+      <label>左-前-右 權重(%)：</label><br>
+      <input type="number" id="weightLeft" value="33" min="0" max="100"> |
+      <input type="number" id="weightFront" value="34" min="0" max="100"> |
+      <input type="number" id="weightRight" value="33" min="0" max="100">
+    </div><br>
+    <button id="startBtn">開始練習</button>
+  </div>
+
+  <div id="practice" style="display:none;">
+    <div id="countdown" style="font-size:2rem; margin-bottom:1rem;"></div>
+    <div id="prompt"></div>
+    <div id="progress" style="margin-top:1rem;"></div>
+  </div>
+
+  <script>
+    const startBtn = document.getElementById('startBtn');
+    const settings = document.getElementById('settings');
+    const practice = document.getElementById('practice');
+    const countdownEl = document.getElementById('countdown');
+    const promptEl = document.getElementById('prompt');
+    const progressEl = document.getElementById('progress');
+
+    function beep() {
+      const ctx = new (window.AudioContext || window.webkitAudioContext)();
+      const o = ctx.createOscillator();
+      o.connect(ctx.destination);
+      o.start();
+      setTimeout(() => o.stop(), 100);
+    }
+
+    startBtn.addEventListener('click', () => {
+      const interval = parseFloat(document.getElementById('interval').value) * 1000;
+      const rounds = parseInt(document.getElementById('rounds').value, 10);
+      const wL = parseInt(document.getElementById('weightLeft').value, 10);
+      const wF = parseInt(document.getElementById('weightFront').value, 10);
+      const wR = parseInt(document.getElementById('weightRight').value, 10);
+      if (wL + wF + wR !== 100) {
+        alert('請確保三邊權重加總為100%');
+        return;
+      }
+      settings.style.display = 'none';
+      practice.style.display = 'block';
+      runCountdown(3, () => startPractice(interval, rounds, [wL, wF, wR]));
+    });
+
+    function runCountdown(sec, callback) {
+      countdownEl.textContent = `準備：${sec}`;
+      if (sec > 0) {
+        setTimeout(() => runCountdown(sec - 1, callback), 1000);
+      } else {
+        countdownEl.textContent = '';
+        callback();
+      }
+    }
+
+    function startPractice(interval, rounds, weights) {
+      let count = 0;
+      showRound();
+      function showRound() {
+        if (count >= rounds) {
+          promptEl.textContent = '完成！';
+          progressEl.textContent = `${rounds}/${rounds}`;
+          return;
+        }
+        progressEl.textContent = `${count + 1}/${rounds}`;
+        const choice = randomChoice(
+          [{text: '左!', cls: 'left'}, {text: '前!', cls: 'front'}, {text: '右!', cls: 'right'}],
+          weights
+        );
+        promptEl.innerHTML = `<span class="${choice.cls}">${choice.text}</span>`;
+        beep();
+        count++;
+        setTimeout(showRound, interval);
+      }
+    }
+
+    function randomChoice(items, weights) {
+      let sum = weights.reduce((a, b) => a + b, 0);
+      let r = Math.random() * sum;
+      for (let i = 0; i < items.length; i++) {
+        if (r < weights[i]) return items[i];
+        r -= weights[i];
+      }
+      return items[items.length - 1];
+    }
+  </script>
+</body>
+</html>
