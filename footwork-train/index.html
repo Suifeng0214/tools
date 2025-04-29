@@ -103,7 +103,7 @@
       animation: pulse 0.6s ease-in-out;
     }
     .prompt-subtext {
-      font-size: 1.2rem;
+      font-size: 2rem;
       opacity: 0.7;
       margin-top: 0.3rem;
     }
@@ -200,9 +200,9 @@
       const o = ctx.createOscillator();
       o.connect(ctx.destination);
       o.start();
-      setTimeout(() => o.stop(), 100);
+      setTimeout(() => o.stop(), 200);
     }
-
+	
     startBtn.addEventListener('click', () => {
       intervalTime = parseFloat(document.getElementById('interval').value) * 1000;
       totalRounds = parseInt(document.getElementById('rounds').value, 10);
