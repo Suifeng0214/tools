@@ -1,0 +1,997 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>投資水位規劃器</title>
+<style>
+  :root {
+    --bg: #f9f9f9;
+    --card: #fff;
+    --ink: #333;
+    --muted: #666;
+    --line: #e0e0e0;
+    --accent: #007bff;
+    --accent-light: #e6f2ff;
+    --button-bg: #e9ecef;
+    --button-hover: #e0e0e0;
+    --button-active: #dcdcdc;
+    --border-radius: 8px;
+  }
+  html, body {
+    background: var(--bg);
+    color: var(--ink);
+    font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    margin: 0;
+  }
+  .wrap {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 24px 20px;
+  }
+  h1 {
+    font-size: 22px;
+    margin: 0 0 8px;
+  }
+  .sub {
+    color: var(--muted);
+    font-size: 13px;
+    margin-bottom: 16px;
+  }
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(12, 1fr);
+    gap: 16px;
+	margin-top: 16px;
+  }
+  .card {
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: var(--border-radius);
+    padding: 16px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+  }
+  .card > .row {
+    margin-bottom: 16px;
+    align-items: flex-end;
+  }
+  
+  .card > .row > .secTitle {
+    margin: 0;
+    white-space: nowrap;
+  }
+  
+  .card > .row > .btn-group {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  label {
+    font-size: 12px;
+    color: var(--muted);
+    display: block;
+    margin-bottom: 4px;
+  }
+  input, select, textarea {
+    width: 100%;
+    padding: 9px 10px;
+    border-radius: 6px;
+    border: 1px solid var(--line);
+    background: #fdfdfd;
+    color: var(--ink);
+    box-sizing: border-box;
+  }
+  input:focus, select:focus, textarea:focus {
+    outline: none;
+    border-color: var(--accent);
+    box-shadow: 0 0 0 2px var(--accent-light);
+  }
+  input.error {
+    border-color: #d9534f;
+    box-shadow: 0 0 0 2px rgba(217, 83, 79, 0.2);
+  }
+  .row {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+    align-items: flex-end;
+  }
+  .btn {
+    background: var(--button-bg);
+    color: var(--ink);
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    padding: 9px 13px;
+    cursor: pointer;
+    position: relative;
+  }
+  .btn:hover {
+    background: var(--button-hover);
+  }
+  .btn:active {
+    background: var(--button-active);
+  }
+  .kpis {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 10px;
+  }
+  .kpi {
+    background: #f0f0f0;
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    padding: 10px;
+  }
+  .kpi div {
+    font-size: 11px;
+    color: var(--muted);
+    margin-bottom: 4px;
+  }
+  .kpi b {
+    font-size: 16px;
+  }
+  .list {
+    width: 100%;
+    border-collapse: collapse;
+  }
+  .list th, .list td {
+    border-bottom: 1px solid var(--line);
+    padding: 8px 6px;
+    text-align: right;
+  }
+  .list th:first-child, .list td:first-child {
+    text-align: left;
+  }
+  .badge {
+    background: var(--button-bg);
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    padding: 3px 8px;
+    font-size: 12px;
+    color: var(--muted);
+  }
+  .muted {
+    font-size: 15px;
+	margin-bottom: 2px;
+    color: var(--muted);
+  }
+  .accent {
+    color: var(--accent);
+  }
+  .pill {
+    display: inline-block;
+    background: #f0f0f0;
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    padding: 2px 8px;
+    margin: 2px;
+    font-size: 12px;
+    color: #555;
+  }
+  .pill a {
+    color: #666;
+    text-decoration: none;
+  }
+  .secTitle {
+      font-size: 18px;
+      margin: 8px 0 6px;
+      color: var(--ink);
+      font-weight: bold;
+  }
+  .warn {
+    color: #d9534f;
+    background-color: #fdd;
+    border: 1px solid #fbc;
+    padding: 10px;
+    border-radius: 6px;
+    margin-top: 10px;
+  }
+  details summary {
+    cursor: pointer;
+    color: var(--ink);
+  }
+  details summary::-webkit-details-marker { display: none; }
+  .pool-header, .stock-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .stock-card {
+    background: #fcfcfc;
+    margin-top: 12px;
+  }
+  .copy-feedback {
+    position: absolute;
+    top: -30px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(0, 0, 0, 0.7);
+    color: white;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 12px;
+    white-space: nowrap;
+    opacity: 0;
+    transition: opacity 0.3s ease-in-out;
+    pointer-events: none;
+  }
+  .copy-feedback.show {
+    opacity: 1;
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>投資水位規劃器 <span class="badge">v1.0</span></h1>
+  <div id="import_export" style="min-width: 480px;"></div>
+  <p class="sub">可用資金隨水位變動；池＝<b>產業分類</b>；個股可加多個 <b>Tag</b>（進攻/防守/自訂）；支援單檔分層加碼規劃、彙總檢視、備註、JSON 匯出/匯入。</p>
+
+  <div class="grid">
+    <div class="card" style="grid-column: span 6;">
+      <div class="secTitle">基本設定</div>
+      <div class="row">
+        <div style="width: 200px"><label>帳戶名稱</label><input id="pf_name" value="我的台股帳戶"></div>
+        <div style="width: 180px"><label>總資金（TWD）</label><input id="pf_capital" type="number" value="1000000" min="1" step="1"></div>
+        <div style="width: 160px"><label>水位％（可用資金）</label><input id="pf_water" type="number" value="70" min="1" max="100" step="1"></div>
+      </div>
+      <div class="row" style="margin-top: 12px;">
+		<div id="kpis" class="kpis">
+			<div class="kpi"><div>可用資金</div><b id="kpiUsable">—</b></div>
+			<div class="kpi"><div>預備資金</div><b id="kpiReserve">—</b></div>
+			<div class="kpi"><div>已分配資金總和</div><b id="kpiStocksAlloc">—</b></div>
+		</div>
+		<div id="overrun-warning-container"></div>
+      </div>
+	  
+	  
+      <div class="secTitle" style="margin-top: 1px;"></div>
+      <div class="row">
+        <div id="rp_riskpct" ></div>
+        <div id="rp_stop" ></div>
+        <div id="rp_step" ></div>
+        <div id="rp_layers"></div>
+        <div id="rp_lot" ></div>
+        <div id="rp_fee"></div>
+		<div id="rp_fee_discount" ></div>
+        <div id="rp_tax" ></div>
+      </div>
+    </div>
+<!--
+<div style="width: 140px"><label>每層風險％（以該股額度）</label><input id="rp_riskpct" type="number" value="0.5" min="0.01" step="0.01"></div>
+        <div style="width: 120px"><label>停損距離％</label><input id="rp_stop" type="number" value="5" min="0.1" step="0.1"></div>
+        <div style="width: 120px"><label>步距％</label><input id="rp_step" type="number" value="2" min="0.1" step="0.1"></div>
+        <div style="width: 120px"><label>層數</label><input id="rp_layers" type="number" value="5" min="1" max="10"></div>
+        <div style="width: 120px"><label>最小股數</label><input id="rp_lot" type="number" value="1" min="1"></div>
+        <div style="width: 140px"><label>手續費％</label><input id="rp_fee" type="number" value="0.1425" step="0.0001"></div>
+		<div style="width: 140px"><label>手續費折數</label><input id="rp_fee_discount" type="number" value="0.6" min="0" max="100" step="0.01"></div>
+        <div style="width: 140px"><label>證交稅％（賣出）</label><input id="rp_tax" type="number" value="0.3" step="0.01"></div>
+-->
+	<div class="card" style="grid-column: span 6;">
+		<div class="secTitle">標籤（Tag）</div>
+		<div class="row" style="align-items: flex-end;">
+			<div style="flex: 1; min-width: 150px;">
+				<label>新增標籤名稱</label>
+				<input id="tag_new" placeholder="例如：半導體、AI">
+			</div>
+			<div style="flex-basis: 200px; min-width: 150px;">
+				<label>類型</label>
+				<select id="tag_type">
+					<option value="strategy">策略</option>
+					<option value="attribute">屬性</option>
+					<option value="custom">自訂</option>
+				</select>
+			</div>
+			<div style="flex-basis: 160px; min-width: 120px;">
+				<label>顏色</label>
+				<input type="color" id="tag_color" value="#ff6b6b" style="height: 38px;">
+			</div>
+			<div style="flex-basis: 140px; min-width: 120px;">
+				<label>&nbsp;</label>
+				<button class="btn" onclick="addTag()">加入標籤</button>
+			</div>
+		</div>
+		<div id="tag_list" style="margin-top: 6px;"></div>
+	</div>
+
+    <div class="card" style="grid-column: span 12;">
+		<div class="row" style="justify-content: space-between; align-items: center">
+			<div class="secTitle">產業池</div>
+			<div style="display: flex; gap: 8px;">
+				<button class="btn btn-muted" onclick="toggleAllStocks(true)">全部展開</button>
+				<button class="btn btn-muted" onclick="toggleAllStocks(false)">全部收合</button>
+				<button class="btn" onclick="addPool()">＋ 新增池</button>
+			</div>
+		</div>
+		<div id="pools" style="margin-top: 16px;"></div>
+    </div>
+
+    <div class="card" style="grid-column: span 6;">
+      <div class="secTitle">彙總：按產業池</div>
+      <table class="list" id="sum_pools"><thead><tr><th>池</th><th>預算</th><th>分配額度（合計）</th></tr></thead><tbody></tbody></table>
+    </div>
+	<div class="card" style="grid-column: span 6;">
+	  <div class="secTitle">彙總：按 Tag</div>
+	  <table class="list" id="sum_tags"><thead><tr><th>Tag</th><th>分配額度（合計）</th><th>佔可用資金％</th></tr></thead><tbody></tbody></table>
+	</div>
+  </div>
+</div>
+
+<div id="modal" style="display:none; position:fixed; z-index:100; left:0; top:0; width:100%; height:100%; overflow:auto; background-color:rgba(0,0,0,0.4);">
+  <div style="background-color:var(--card); margin:15% auto; padding:20px; border:1px solid var(--line); border-radius:16px; width:80%; max-width:600px;">
+    <div style="text-align:right;"><button class="btn" onclick="hideModal()">關閉</button></div>
+    <div id="modal-content"></div>
+  </div>
+</div>
+
+<script>
+
+function getModalContent() {
+  return `
+    <h2>額度模式說明</h2>
+    <p>以下是個股在產業池中的三種額度分配模式：</p>
+    <ul>
+      <li>
+        <b>固定金額</b>：直接指定一個固定的投資金額。這個模式適合你已經有明確預算的情況。
+      </li>
+      <li>
+        <b>比例</b>：指定一個佔「池預算」的比例。例如，設為 0.2，表示分配到池預算的 20%。
+      </li>
+      <li>
+        <b>共享剩餘</b>：不會獲得固定額度，而是與池中所有同樣設為「共享」模式的股票，共同瓜分剩餘的預算。這適合那些想彈性分配的部位。
+      </li>
+    </ul>
+    <p>當你改變任一設定時，系統會自動重新計算所有規劃。</p>
+  `;
+}
+
+// 顯示彈窗
+function showModal(content) {
+  $('#modal-content').innerHTML = content;
+  $('#modal').style.display = 'block';
+}
+
+// 隱藏彈窗
+function hideModal() {
+  $('#modal').style.display = 'none';
+}
+
+// 移動個股到另一個池
+function moveStock(fromPi, si, toPi) {
+  if (fromPi === toPi) return;
+  const stock = state.pools[fromPi].stocks.splice(si, 1)[0];
+  state.pools[toPi].stocks.push(stock);
+  renderAll();
+}
+
+// 展開或收合所有股票
+function toggleAllStocks(expand) {
+  $$('.stock-card').forEach(card => {
+    card.open = expand;
+  });
+}
+
+// ---------- 小工具 ----------
+const $ = sel => document.querySelector(sel);
+const $$ = sel => Array.from(document.querySelectorAll(sel));
+function fmt(n, d = 0) {
+  if (!isFinite(n)) return '—';
+  return Number(n).toLocaleString(undefined, { maximumFractionDigits: d, minimumFractionDigits: d });
+}
+function pct(n, d = 2) {
+  if (!isFinite(n)) return '—';
+  return (n * 100).toFixed(d) + '%';
+}
+function uuid() {
+  return 'xxxxxxxx'.replace(/x/g, () => ((Math.random() * 16) | 0).toString(16));
+}
+function validateAndSetClass(input, isValid) {
+  if (isValid) {
+    input.classList.remove('error');
+  } else {
+    input.classList.add('error');
+  }
+}
+
+// ---------- 狀態 ----------
+let state = {
+  schemaVersion: 3,
+  name: '我的台股帳戶',
+  capitalTotal: 1000000,
+  waterLevelPct: 0.70,
+  riskPolicy: { riskPerLayerPct: 0.005, stopPct: 0.05, stepPct: 0.02, layers: 5, lotSize: 1, feePct: 0.001425, taxPct: 0.003 },
+  tags: [
+    { name: '進攻', type: 'strategy', color: '#ff6b6b' },
+    { name: '防守', type: 'strategy', color: '#4dabf7' }
+  ],
+  pools: [],
+  updatedAt: new Date().toISOString()
+};
+
+// ---------- 計算：資金/預算/額度分配 ----------
+function resolveBudgets(st) {
+  // 1. 計算可用資金和預備資金
+  const capitalUsable = st.capitalTotal * st.waterLevelPct;
+  st._capitalUsable = isFinite(capitalUsable) ? capitalUsable : 0;
+  st._capitalReserve = isFinite(st.capitalTotal - capitalUsable) ? st.capitalTotal - capitalUsable : 0;
+
+  let stocksAllocSum = 0;
+
+  // 2. 遍歷每個池，計算其預算與股票分配額度
+  st.pools.forEach(p => {
+    // 計算池的總預算
+    let budgetResolved = 0;
+    if (p.budgetMode === 'ratio') budgetResolved = st._capitalUsable * (Number(p.budgetRatio) || 0);
+    else budgetResolved = Number(p.budgetAmount) || 0;
+    p._budgetResolved = Math.max(0, Math.floor(budgetResolved));
+
+    p.stocks.forEach(s => s._allocResolved = 0);
+
+    const fixedAndRatio = p.stocks.filter(s => s.allocMode === 'fixed' || s.allocMode === 'ratio');
+    const pooled = p.stocks.filter(s => s.allocMode === 'pooled');
+
+    // 計算 fixed 和 ratio 的額度
+    fixedAndRatio.forEach(s => {
+      if (s.allocMode === 'fixed') {
+        s._allocResolved = Math.max(0, Math.floor(Number(s.allocAmount) || 0));
+      } else { // ratio
+        s._allocResolved = Math.max(0, Math.floor(p._budgetResolved * (Number(s.allocRatio) || 0)));
+      }
+    });
+
+    const usedBeforePooled = fixedAndRatio.reduce((a, s) => a + s._allocResolved, 0);
+    p._isOverBudget = usedBeforePooled > p._budgetResolved;
+
+    // 分配 pooled 的額度
+    let leftover = p._budgetResolved - usedBeforePooled;
+    if (leftover > 0 && pooled.length > 0) {
+      const each = Math.floor(leftover / pooled.length);
+      pooled.forEach(s => { s._allocResolved = each; });
+      let rem = leftover - each * pooled.length;
+      let i = 0;
+      while (rem > 0) { pooled[i % pooled.length]._allocResolved += 1; rem--; i++; }
+    } else {
+      pooled.forEach(s => { s._allocResolved = 0; });
+    }
+
+    // 計算單一池的已分配額度總和
+    p._allocSum = p.stocks.reduce((a, s) => a + (s._allocResolved || 0), 0);
+    // 累加所有池的已分配額度總和
+    stocksAllocSum += p._allocSum;
+  });
+
+  // 3. 儲存最終的總計
+  st._stocksAllocSum = stocksAllocSum;
+
+  // 新增：計算池預算合計與可用資金的差額
+  st._budgetOverrun = Math.max(0, st._stocksAllocSum - st._capitalUsable);
+}
+
+// ---------- 單檔加碼規劃 ----------
+function planSingle(stock, pool, st) {
+  const base = Object.assign({}, st.riskPolicy, stock.riskPlan || {});
+  const riskPct = Number(base.riskPerLayerPct || st.riskPolicy.riskPerLayerPct);
+  const stopPct = Number(base.stopPct);
+  const stepPct = Number(base.stepPct);
+  const layers = Number(base.layers);
+  const lot = Math.max(1, Number(base.lotSize));
+  const entry0 = Number(stock.entry0 || 0);
+  const alloc = Number(stock._allocResolved || 0);
+  const mode = stock.mode || 'up';
+
+  const fee = Number(base.feePct || 0);
+  const feeDiscount = Number(base.feeDiscount || 0);
+  const actualFeeRate = fee * feeDiscount;
+  const tax = Number(base.taxPct || 0);
+
+  if (!(alloc > 0 && entry0 > 0)) {
+    stock._planRows = [];
+    stock._kpi = { reason: '額度或進場價為 0' };
+    return;
+  }
+
+  const R = alloc * riskPct;
+  const k = stopPct;
+  const step = stepPct;
+
+  let rows = [];
+  let S = 0, A = 0, invested = 0, cumRisk = 0;
+  for (let i = 1; i <= layers; i++) {
+    const Pi = (mode === 'up') ? entry0 * (1 + step * (i - 1)) : entry0 * (1 - step * (i - 1));
+    let lo = 0, hi = Math.max(1, Math.ceil(R / Math.max(0.01, k * Pi)));
+    const riskDelta = (s) => {
+      const Sprime = S + s;
+      const Aprime = (S === 0 && s > 0) ? Pi : (S * A + s * Pi) / Math.max(1, Sprime);
+      const newRisk = k * Aprime * Sprime;
+      return newRisk - cumRisk;
+    };
+    while (riskDelta(hi) < R) hi *= 2;
+    for (let t = 0; t < 40; t++) {
+      const mid = (lo + hi) / 2;
+      const dR = riskDelta(mid);
+      if (dR > R) hi = mid;
+      else lo = mid;
+    }
+    let s = Math.ceil(Math.floor(hi) / lot) * lot;
+    if (s <= 0) s = lot;
+
+    const Sprime = S + s;
+    const Aprime = (S === 0 && s > 0) ? Pi : (S * A + s * Pi) / Sprime;
+    const stopPrice = Aprime * (1 - k);
+    const addCost = s * Pi;
+    invested += addCost;
+    const newRisk = k * Aprime * Sprime;
+    const addRisk = newRisk - cumRisk;
+    cumRisk = newRisk;
+    const holdPctPool = (pool._budgetResolved > 0) ? (invested / pool._budgetResolved) : 0;
+
+    rows.push({
+      layer: i,
+      price: Pi,
+      addShares: s,
+      cumShares: Sprime,
+      avgPrice: Aprime,
+      stopPrice,
+      addRiskAmt: addRisk,
+      cumRiskAmt: cumRisk,
+      investedAmt: invested,
+      holdPctOfPool: holdPctPool
+    });
+    S = Sprime;
+    A = Aprime;
+  }
+
+  const buyFee = invested * fee;
+  stock._planRows = rows;
+  stock._kpi = {
+    riskPerLayerAmt: R,
+    maxLossAtStop: rows.length ? rows[rows.length - 1].cumRiskAmt : 0,
+    plannedInvest: invested + buyFee,
+    finalHoldPctOfPool: rows.length ? rows[rows.length - 1].holdPctOfPool : 0
+  };
+}
+
+// ---------- 渲染：拆分成各個小函數 ----------
+function renderKPIs() {
+  $('#kpis').innerHTML = `
+    <div class="kpi"><div>可用資金</div><b id="kpiUsable">${fmt(state._capitalUsable, 0)} 元</b></div>
+    <div class="kpi"><div>預備資金</div><b id="kpiReserve">${fmt(state._capitalReserve, 0)} 元</b></div>
+    <div class="kpi"><div>已分配額度總和</div><b id="kpiStocksAlloc">${fmt(state._stocksAllocSum, 0)} 元</b></div>
+  `;
+  
+  // 渲染警告
+    const overrunWarningContainer = $('#overrun-warning-container');
+    if (state._stocksAllocSum > state._capitalUsable) {
+        const overrunAmount = state._stocksAllocSum - state._capitalUsable;
+        overrunWarningContainer.innerHTML = `<div class="warn" style="margin-top: 10px;">警告：已分配額度總和已超出可用資金！超出金額：${fmt(overrunAmount, 0)} 元</div>`;
+    } else {
+        overrunWarningContainer.innerHTML = '';
+    }
+}
+
+function renderTags() {
+  const tagDiv = $('#tag_list');
+  tagDiv.innerHTML = state.tags.map((t, i) => `<span class="pill" style="border-color:${t.color || 'var(--line)'}">${t.name} <a href="#" onclick="delTag(${i});return false;" class="muted">×</a></span>`).join('');
+}
+
+function renderTools() {
+  const host = $('#import_export');
+  host.innerHTML = `
+    <div style="margin-top: 16px;">
+      <div class="row" style="align-items: center; justify-content: flex-start; gap: 8px;">
+        <button class="btn" onclick="showModal(getModalContent());">使用說明</button>
+        <button class="btn" onclick="exportJSON();">複製設定 JSON</button>
+        <button class="btn" onclick="importJSONPrompt();">從 JSON 載入</button>
+      </div>
+    </div>
+  `;
+}
+
+// 渲染所有產業池
+function renderPools() {
+  const poolsEl = $('#pools');
+  poolsEl.innerHTML = '';
+  state.pools.forEach((p, pi) => {
+    const details = document.createElement('details');
+    details.className = 'card pool-card';
+    details.style.marginBottom = '16px';
+    details.open = true;
+
+    const overBudgetWarn = p._isOverBudget ? `<div class="warn" style="margin-top: 10px;">警告：已分配額度已超出池預算！</div>` : '';
+    const allocRatio = p._budgetResolved > 0 ? (p._allocSum / p._budgetResolved) : 0;
+      
+    details.innerHTML = `
+      <summary class="pool-header" style="justify-content: space-between; align-items: center;">
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <span style="font-size: 14px; color: var(--muted);">&#9654;</span>
+          <div class="secTitle" style="margin: 0; min-width: 150px;"><input data-p="${pi}" data-k="name" value="${p.name}" style="width: 200px; padding: 4px 6px;"></div>
+        </div>
+        <div class="row" style="flex-grow: 1; justify-content: flex-start; gap: 16px; margin-left: 24px;">
+          <div class="kpi"><div>池預算</div><b>${fmt(p._budgetResolved, 0)} 元</b></div>
+          <div class="kpi"><div>已分配額度</div><b>${fmt(p._allocSum, 0)} 元</b></div>
+          <div class="kpi"><div>已分配比例</div><b>${pct(allocRatio)}</b></div>
+        </div>
+        <div style="display: flex; gap: 8px; margin-left: auto;">
+          <button class="btn" onclick="addStock(${pi}); event.stopPropagation();">＋ 新增股票</button>
+          <button class="btn" onclick="delPool(${pi}); event.stopPropagation();">刪除池</button>
+        </div>
+      </summary>
+      <div>
+        <div class="row" style="margin-top: 12px;">
+          <div style="width: 200px"><label>預算模式</label>
+            <select data-p="${pi}" data-k="budgetMode">
+              <option value="ratio" ${p.budgetMode === 'ratio' ? 'selected' : ''}>比例（對可用資金）</option>
+              <option value="fixed" ${p.budgetMode === 'fixed' ? 'selected' : ''}>固定金額</option>
+            </select>
+          </div>
+          <div style="width: 160px; display: ${p.budgetMode === 'ratio' ? 'block' : 'none'};"><label>比例</label><input data-p="${pi}" data-k="budgetRatio" type="number" step="0.01" value="${p.budgetRatio ?? 0}" min="0" max="1"></div>
+          <div style="width: 180px; display: ${p.budgetMode === 'fixed' ? 'block' : 'none'};"><label>固定金額</label><input data-p="${pi}" data-k="budgetAmount" type="number" step="1" value="${p.budgetAmount ?? 0}" min="0"></div>
+        </div>
+        ${overBudgetWarn}
+        <div id="stocks_${pi}"></div>
+      </div>
+    `;
+
+    poolsEl.appendChild(details);
+
+    details.querySelectorAll('input, select').forEach(inp => {
+      inp.addEventListener('change', (ev) => {
+        const idx = Number(ev.target.getAttribute('data-p'));
+        const key = ev.target.getAttribute('data-k');
+        let val = ev.target.value;
+        if (key === 'budgetRatio') {
+          val = Number(val);
+          validateAndSetClass(ev.target, val >= 0 && val <= 1);
+        } else if (key === 'budgetAmount') {
+          val = Number(val);
+          validateAndSetClass(ev.target, val >= 0);
+        }
+        state.pools[idx][key] = val;
+        renderAll();
+      });
+    });
+    
+    renderStocks(pi);
+  });
+}
+
+function renderStocks(pi) {
+  const p = state.pools[pi];
+  const box = $(`#stocks_${pi}`);
+  box.innerHTML = '';
+  p.stocks.forEach((s, si) => {
+    const details = document.createElement('details');
+    details.className = 'card stock-card';
+    details.open = true;
+
+    const allocInputs = s.allocMode === 'fixed'
+      ? `<div style="width:160px"><label>額度（元）</label><input data-pi="${pi}" data-si="${si}" data-k="allocAmount" type="number" step="1" value="${s.allocAmount ?? 0}" min="0"></div>`
+      : s.allocMode === 'ratio'
+        ? `<div style="width:160px"><label>比例（對池）</label><input data-pi="${pi}" data-si="${si}" data-k="allocRatio" type="number" step="0.01" value="${s.allocRatio ?? 0}" min="0" max="1"></div>`
+        : `<div class="muted">共享：將於分配後共享池內剩餘預算</div>`;
+
+    const tagOptions = state.tags.map(t => `<option value="${t.name}" ${((s.tags || []).includes(t.name)) ? 'selected' : ''}>${t.name}</option>`).join('');
+    const rp = Object.assign({}, state.riskPolicy, s.riskPlan || {});
+    
+    // 計算分配比例
+    const allocPct = p._budgetResolved > 0 ? (s._allocResolved / p._budgetResolved) : 0;
+    
+    details.innerHTML = `
+      <summary class="stock-header">
+        <div class="secTitle" style="margin: 0; min-width: 150px;"><span style="font-size: 14px; color: var(--muted);">&#9654;</span> ${s.name || s.ticker || '新股票'}</div>
+        <div class="row" style="flex-grow: 1; justify-content: flex-start; gap: 16px; margin-left: 24px;">
+            <div class="kpi"><div>分配額度</div><b>${fmt(s._allocResolved || 0, 0)} 元</b></div>
+            <div class="kpi"><div>分配比例</div><b>${pct(allocPct)}</b></div>
+        </div>
+        <div>
+          <!--<button class="btn btn-muted" onclick="clearPlan(${pi}, ${si}); event.stopPropagation();">清除</button>-->
+		  <select onchange="moveStock(${pi}, ${si}, this.value); event.stopPropagation();" style="width:120px; font-size:12px; padding: 6px; margin-right: 8px;">
+			<option value="">移動至...</option>
+			${state.pools.map((p, i) => `<option value="${i}" ${pi === i ? 'disabled' : ''}>${p.name}</option>`).join('')}
+		  </select>
+          <button class="btn" onclick="delStock(${pi}, ${si}); event.stopPropagation();">刪除</button>
+        </div>
+      </summary>
+      <div>
+        <div class="row" style="margin-top: 8px;">
+          <div style="width: 160px"><label>代號</label><input data-pi="${pi}" data-si="${si}" data-k="ticker" value="${s.ticker || ''}"></div>
+          <div style="width: 180px"><label>名稱</label><input data-pi="${pi}" data-si="${si}" data-k="name" value="${s.name || ''}"></div>
+          <div style="width: 160px"><label>額度模式</label>
+            <select data-pi="${pi}" data-si="${si}" data-k="allocMode">
+              <option value="fixed" ${s.allocMode === 'fixed' ? 'selected' : ''}>固定金額</option>
+              <option value="ratio" ${s.allocMode === 'ratio' ? 'selected' : ''}>比例</option>
+              <option value="pooled" ${s.allocMode === 'pooled' ? 'selected' : ''}>共享剩餘</option>
+            </select>
+          </div>
+          ${allocInputs}
+        </div>
+        <div class="row" style="margin-top: 12px;">
+          <div style="min-width: 260px; flex: 1"><label>標籤（多選 Ctrl/⌘）</label>
+            <select multiple size="3" data-pi="${pi}" data-si="${si}" data-k="tags">${tagOptions}</select>
+          </div>
+          <div style="min-width: 320px; flex: 2"><label>備註</label><textarea rows="3" data-pi="${pi}" data-si="${si}" data-k="note">${s.note || ''}</textarea></div>
+        </div>
+		<div id="plan_${pi}_${si}"></div>
+      </div>
+    `;
+
+    box.appendChild(details);
+
+    details.querySelectorAll('input, select, textarea').forEach(inp => {
+      inp.addEventListener('change', ev => {
+        const pi2 = Number(ev.target.getAttribute('data-pi'));
+        const si2 = Number(ev.target.getAttribute('data-si'));
+        const key = ev.target.getAttribute('data-k');
+        let val = ev.target.value;
+        if (key === 'allocAmount' || key === 'entry0') {
+          val = Number(val);
+          validateAndSetClass(ev.target, val >= 0);
+        } else if (key === 'allocRatio') {
+          val = Number(val);
+          validateAndSetClass(ev.target, val >= 0 && val <= 1);
+        } else if (key === 'tags') {
+          val = Array.from(ev.target.selectedOptions).map(o => o.value);
+        }
+        state.pools[pi2].stocks[si2][key] = val;
+        renderAll();
+      });
+    });
+
+    details.querySelectorAll('[data-rk]').forEach(inp => {
+      inp.addEventListener('change', ev => {
+        const pi2 = Number(ev.target.getAttribute('data-pi'));
+        const si2 = Number(ev.target.getAttribute('data-si'));
+        const key = ev.target.getAttribute('data-rk');
+        let val = Number(ev.target.value) || 0;
+        if (['riskPerLayerPct', 'stopPct', 'stepPct', 'feePct', 'taxPct'].includes(key)) val = val / 100;
+        state.pools[pi2].stocks[si2].riskPlan = Object.assign({}, state.pools[pi2].stocks[si2].riskPlan || {}, { [key]: val });
+        renderAll();
+      });
+    });
+  });
+}
+
+function renderSummaries() {
+  const tb1 = $('#sum_pools tbody');
+  tb1.innerHTML = '';
+  state.pools.forEach(p => {
+    const planned = p.stocks.reduce((a, s) => a + ((s._kpi && s._kpi.plannedInvest) || 0), 0);
+    const tr = document.createElement('tr');
+    tr.innerHTML = `<td>${p.name}</td><td>${fmt(p._budgetResolved, 0)}</td><td>${fmt(p._allocSum, 0)}</td>`;
+    tb1.appendChild(tr);
+  });
+
+  const map = new Map();
+  state.pools.forEach(p => {
+    p.stocks.forEach(s => {
+      const planned = (s._kpi && s._kpi.plannedInvest) || 0;
+      (s.tags || []).forEach(tag => {
+        const cur = map.get(tag) || { alloc: 0, invest: 0 };
+        cur.alloc += (s._allocResolved || 0);
+        cur.invest += planned;
+        map.set(tag, cur);
+      });
+    });
+  });
+  const tb2 = $('#sum_tags tbody');
+  const usableCapital = state._capitalUsable || 0;
+  tb2.innerHTML = '';
+  for (const [tag, v] of map.entries()) {
+    const tr = document.createElement('tr');
+    const allocPct = usableCapital > 0 ? v.alloc / usableCapital : 0;
+    tr.innerHTML = `<td>${tag}</td><td>${fmt(v.alloc, 0)}</td><td>${pct(allocPct)}</td>`;
+    tb2.appendChild(tr);
+  }
+}
+
+function renderAll() {
+  state.name = $('#pf_name').value;
+  state.capitalTotal = Number($('#pf_capital').value) || 0;
+  state.waterLevelPct = (Number($('#pf_water').value) || 0) / 100;
+  state.riskPolicy = {
+    riskPerLayerPct: (Number($('#rp_riskpct').value) || 0) / 100,
+    stopPct: (Number($('#rp_stop').value) || 0) / 100,
+    stepPct: (Number($('#rp_step').value) || 0) / 100,
+    layers: Number($('#rp_layers').value) || 5,
+    lotSize: Math.max(1, Number($('#rp_lot').value) || 1),
+    feePct: (Number($('#rp_fee').value) || 0) / 100,
+	feeDiscount: Number($('#rp_fee_discount').value) || 0,
+    taxPct: (Number($('#rp_tax').value) || 0) / 100
+  };
+
+  validateAndSetClass($('#pf_capital'), state.capitalTotal > 0);
+  validateAndSetClass($('#pf_water'), state.waterLevelPct > 0 && state.waterLevelPct <= 1);
+  
+  resolveBudgets(state);
+  state.pools.forEach(p => p.stocks.forEach(s => planSingle(s, p, state)));
+  
+  // 呼叫所有渲染函數
+  renderTools();
+  renderKPIs();
+  renderPools();
+  renderTags();
+  renderSummaries();
+  state.updatedAt = new Date().toISOString();
+}
+
+// ---------- 事件：Tag / Pool / Stock CRUD ----------
+function addTag() {
+  const name = ($('#tag_new').value || '').trim();
+  if (!name) return;
+  const type = $('#tag_type').value;
+  const color = ($('#tag_color').value || '').trim();
+  if (state.tags.find(t => t.name === name)) return alert('已有同名 Tag');
+  state.tags.push({ name, type, color });
+  $('#tag_new').value = '';
+  $('#tag_color').value = '';
+  renderAll();
+}
+function delTag(idx) {
+  state.tags.splice(idx, 1);
+  renderAll();
+}
+
+function addPool() {
+  state.pools.push({ id: uuid(), name: '新產業', budgetMode: 'ratio', budgetRatio: 0.2, stocks: [] });
+  renderAll();
+}
+function delPool(i) {
+  if (!confirm('刪除此池？')) return;
+  state.pools.splice(i, 1);
+  renderAll();
+}
+
+function addStock(pi) {
+  state.pools[pi].stocks.push({ id: uuid(), ticker: '', name: '', allocMode: 'pooled', entry0: 0, tags: [], note: '' });
+  renderAll();
+}
+function delStock(pi, si) {
+  if (!confirm('刪除此股票？')) return;
+  state.pools[pi].stocks.splice(si, 1);
+  renderAll();
+}
+
+// 移動個股到另一個池
+function moveStock(fromPi, si, toPi) {
+  if (fromPi === toPi) return;
+  const stock = state.pools[fromPi].stocks.splice(si, 1)[0];
+  state.pools[toPi].stocks.push(stock);
+  renderAll();
+}
+
+// 清除單檔規劃
+function clearPlan(pi, si) {
+  $(`#plan_${pi}_${si}`).innerHTML = '';
+}
+
+function planNow(pi, si) {
+  const p = state.pools[pi];
+  const s = p.stocks[si];
+  if (!s.entry0) {
+    alert('請先輸入進場價 P₀');
+    return;
+  }
+  
+  planSingle(s, p, state);
+
+  const host = $(`#plan_${pi}_${si}`);
+  const k = s._kpi || {};
+  const rows = s._planRows || [];
+  let kpiHtml = `<div class="row" style="margin-top: 8px;">
+    <div class="kpi"><div>單層風險</div><b>${fmt(k.riskPerLayerAmt || 0, 0)} 元</b></div>
+    <div class="kpi"><div>停損最大虧損</div><b>${fmt(k.maxLossAtStop || 0, 0)} 元</b></div>
+    <div class="kpi"><div>規劃投入</div><b>${fmt(k.plannedInvest || 0, 0)} 元</b></div>
+    <div class="kpi"><div>持股水位（對池）</div><b>${pct(k.finalHoldPctOfPool || 0, 2)}</b></div>
+  </div>`;
+
+  let tbl = `<table class="list" style="margin-top: 12px;"><thead><tr><th>層</th><th>價格</th><th>新增股數</th><th>累計股數</th><th>均價</th><th>停損價</th><th>新增風險</th><th>累計風險</th><th>累計投入</th><th>水位(池)</th></tr></thead><tbody>`;
+  rows.forEach(r => {
+    tbl += `<tr><td>${r.layer}</td><td>${fmt(r.price, 2)}</td><td>${fmt(r.addShares)}</td><td>${fmt(r.cumShares)}</td><td>${fmt(r.avgPrice, 2)}</td><td>${fmt(r.stopPrice, 2)}</td><td>${fmt(r.addRiskAmt, 0)}</td><td>${fmt(r.cumRiskAmt, 0)}</td><td>${fmt(r.investedAmt, 0)}</td><td>${pct(r.holdPctOfPool, 2)}</td></tr>`;
+  });
+  tbl += `</tbody></table>`;
+
+  host.innerHTML = k.reason ? `<div class="warn">${k.reason}</div>` : (kpiHtml + tbl);
+  renderSummaries();
+}
+
+// ---------- 匯入 / 匯出 ----------
+function showCopyFeedback() {
+  const btn = $('#exportBtn');
+  const feedback = document.createElement('span');
+  feedback.className = 'copy-feedback';
+  feedback.textContent = '已複製！';
+  btn.appendChild(feedback);
+  
+  setTimeout(() => { feedback.classList.add('show'); }, 10);
+  setTimeout(() => { feedback.classList.remove('show'); }, 1500);
+  setTimeout(() => { feedback.remove(); }, 1800);
+}
+
+function exportJSON() {
+  const dataToExport = {
+    schemaVersion: 3,
+    name: state.name,
+    capitalTotal: state.capitalTotal,
+    waterLevelPct: state.waterLevelPct,
+    riskPolicy: state.riskPolicy,
+    tags: state.tags,
+    pools: state.pools,
+    updatedAt: new Date().toISOString()
+  };
+  const out = JSON.stringify(dataToExport, null, 2);
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(out).then(() => {
+      showCopyFeedback();
+    }).catch(() => {
+      alert('無法寫入剪貼簿，請手動複製');
+      const w = window.open();
+      w.document.write(`<pre>${out.replace(/[&<>]/g, s => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[s]))}</pre>`);
+    });
+  } else {
+    alert('無法寫入剪貼簿，請手動複製');
+    const w = window.open();
+    w.document.write(`<pre>${out.replace(/[&<>]/g, s => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[s]))}</pre>`);
+  }
+}
+
+function importJSONPrompt() {
+  const txt = prompt('貼上先前匯出的 JSON：');
+  if (!txt) return;
+  try {
+    const obj = JSON.parse(txt);
+    if (obj.schemaVersion < 1 || obj.schemaVersion > 3) {
+      return alert('schemaVersion 不相容，目前支援版本為 1 到 3');
+    }
+    state = {
+      schemaVersion: 3,
+      name: obj.name,
+      capitalTotal: obj.capitalTotal,
+      waterLevelPct: obj.waterLevelPct,
+      riskPolicy: obj.riskPolicy,
+      tags: obj.tags || [],
+      pools: obj.pools || [],
+      updatedAt: new Date().toISOString()
+    };
+    state.pools.forEach(p => {
+      p.id = p.id || uuid();
+      p.stocks.forEach(s => {
+        s.id = s.id || uuid();
+      });
+    });
+	initInputsFromState(state); 
+    renderAll();
+    alert('設定已成功載入！');
+  } catch (e) {
+    alert('JSON 解析失敗，請確認格式是否正確。');
+    console.error(e);
+  }
+}
+
+// ---------- 初始化：將 state 值放入表單並渲染 ----------
+function initInputsFromState(currentState) {
+  $('#pf_name').value = currentState.name;
+  $('#pf_capital').value = currentState.capitalTotal;
+  $('#pf_water').value = Math.round(currentState.waterLevelPct * 100);
+  $('#rp_riskpct').value = (currentState.riskPolicy.riskPerLayerPct * 100).toFixed(2);
+  $('#rp_stop').value = (currentState.riskPolicy.stopPct * 100).toFixed(1);
+  $('#rp_step').value = (currentState.riskPolicy.stepPct * 100).toFixed(1);
+  $('#rp_layers').value = currentState.riskPolicy.layers;
+  $('#rp_lot').value = currentState.riskPolicy.lotSize;
+  $('#rp_fee').value = (currentState.riskPolicy.feePct * 100).toFixed(4);
+  $('#rp_fee_discount').value = (currentState.riskPolicy.feeDiscount || 0);
+  $('#rp_tax').value = (currentState.riskPolicy.taxPct * 100).toFixed(2);
+}
+
+// 綁定頂層輸入事件
+['pf_name', 'pf_capital', 'pf_water', 'rp_riskpct', 'rp_stop', 'rp_step', 'rp_layers', 'rp_lot', 'rp_fee', 'rp_tax'].forEach(id => {
+  const inputEl = document.getElementById(id);
+  if (inputEl) {
+    inputEl.addEventListener('input', renderAll);
+  }
+});
+
+// 啟動
+initInputsFromState(state);
+renderAll();
+</script>
+</body>
+</html>
