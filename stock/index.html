@@ -66,6 +66,11 @@
     align-items: center;
     gap: 8px;
   }
+  .card.pool-card {
+	border-left: 3px solid #e43f3f; /* 醒目的左側紅色邊框 */
+	border-right: 3px solid #e43f3f; /* 醒目的右側紅色邊框 */
+	border-top: 4px solid #e43f3f; /* 頂部邊框也使用紅色 */
+  }
   label {
     font-size: 12px;
     color: var(--muted);
@@ -185,6 +190,9 @@
     padding: 10px;
     border-radius: 6px;
     margin-top: 10px;
+  }
+  .warn-text {
+	color: #d9534f; /* 使用與警告框相同的紅色 */
   }
   details summary {
     cursor: pointer;
@@ -365,9 +373,13 @@ function moveStock(fromPi, si, toPi) {
 
 // 展開或收合所有股票
 function toggleAllStocks(expand) {
-  $$('.stock-card').forEach(card => {
-    card.open = expand;
+  state.pools.forEach(p => {
+    p.isOpen = expand;
+    p.stocks.forEach(s => {
+      s.isOpen = expand;
+    });
   });
+  renderAll();
 }
 
 // ---------- 小工具 ----------
@@ -555,7 +567,7 @@ function renderKPIs() {
   $('#kpis').innerHTML = `
     <div class="kpi"><div>可用資金</div><b id="kpiUsable">${fmt(state._capitalUsable, 0)} 元</b></div>
     <div class="kpi"><div>預備資金</div><b id="kpiReserve">${fmt(state._capitalReserve, 0)} 元</b></div>
-    <div class="kpi"><div>已分配額度總和</div><b id="kpiStocksAlloc">${fmt(state._stocksAllocSum, 0)} 元</b></div>
+    <div class="kpi"><div>已分配額度總和</div><b id="kpiStocksAlloc" class="${state._stocksAllocSum > state._capitalUsable ? 'warn-text' : ''}">${fmt(state._stocksAllocSum, 0)} 元</b></div>
   `;
   
   // 渲染警告
@@ -594,7 +606,7 @@ function renderPools() {
     const details = document.createElement('details');
     details.className = 'card pool-card';
     details.style.marginBottom = '16px';
-    details.open = true;
+    details.open = p.isOpen; 
 
     const overBudgetWarn = p._isOverBudget ? `<div class="warn" style="margin-top: 10px;">警告：已分配額度已超出池預算！</div>` : '';
     const allocRatio = p._budgetResolved > 0 ? (p._allocSum / p._budgetResolved) : 0;
@@ -608,7 +620,7 @@ function renderPools() {
         <div class="row" style="flex-grow: 1; justify-content: flex-start; gap: 16px; margin-left: 24px;">
           <div class="kpi"><div>池預算</div><b>${fmt(p._budgetResolved, 0)} 元</b></div>
           <div class="kpi"><div>已分配額度</div><b>${fmt(p._allocSum, 0)} 元</b></div>
-          <div class="kpi"><div>已分配比例</div><b>${pct(allocRatio)}</b></div>
+          <div class="kpi"><div>已分配比例</div><b class="${p._isOverBudget ? 'warn-text' : ''}">${pct(allocRatio)}</b></div>
         </div>
         <div style="display: flex; gap: 8px; margin-left: auto;">
           <button class="btn" onclick="addStock(${pi}); event.stopPropagation();">＋ 新增股票</button>
@@ -632,7 +644,9 @@ function renderPools() {
     `;
 
     poolsEl.appendChild(details);
-
+	details.addEventListener('toggle', () => {
+        state.pools[pi].isOpen = details.open;
+    });
     details.querySelectorAll('input, select').forEach(inp => {
       inp.addEventListener('change', (ev) => {
         const idx = Number(ev.target.getAttribute('data-p'));
@@ -661,7 +675,7 @@ function renderStocks(pi) {
   p.stocks.forEach((s, si) => {
     const details = document.createElement('details');
     details.className = 'card stock-card';
-    details.open = true;
+    details.open = s.isOpen;
 
     const allocInputs = s.allocMode === 'fixed'
       ? `<div style="width:160px"><label>額度（元）</label><input data-pi="${pi}" data-si="${si}" data-k="allocAmount" type="number" step="1" value="${s.allocAmount ?? 0}" min="0"></div>`
@@ -715,7 +729,9 @@ function renderStocks(pi) {
     `;
 
     box.appendChild(details);
-
+	details.addEventListener('toggle', () => {
+        state.pools[pi].stocks[si].isOpen = details.open;
+    });
     details.querySelectorAll('input, select, textarea').forEach(inp => {
       inp.addEventListener('change', ev => {
         const pi2 = Number(ev.target.getAttribute('data-pi'));
@@ -831,7 +847,7 @@ function delTag(idx) {
 }
 
 function addPool() {
-  state.pools.push({ id: uuid(), name: '新產業', budgetMode: 'ratio', budgetRatio: 0.2, stocks: [] });
+  state.pools.push({ id: uuid(), name: '新產業', budgetMode: 'ratio', budgetRatio: 0.2, stocks: [], isOpen: true });
   renderAll();
 }
 function delPool(i) {
@@ -841,7 +857,7 @@ function delPool(i) {
 }
 
 function addStock(pi) {
-  state.pools[pi].stocks.push({ id: uuid(), ticker: '', name: '', allocMode: 'pooled', entry0: 0, tags: [], note: '' });
+  state.pools[pi].stocks.push({ id: uuid(), ticker: '', name: '', allocMode: 'pooled', entry0: 0, tags: [], note: '', isOpen: true });
   renderAll();
 }
 function delStock(pi, si) {
