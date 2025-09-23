@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>投資水位規劃器</title>
+<title>股倉水位規劃器</title>
 <style>
   :root {
     --bg: #f9f9f9;
@@ -230,7 +230,7 @@
 </head>
 <body>
 <div class="wrap">
-  <h1>投資水位規劃器 <span class="badge">v1.0</span></h1>
+  <h1>股倉水位規劃器（電腦版） <span class="badge">v1.0</span></h1>
   <div id="import_export" style="min-width: 480px;"></div>
   <p class="sub">可用資金隨水位變動；池＝<b>個股分類</b>；個股可加多個 <b>Tag</b>（進攻/防守/自訂）；支援彙總檢視、備註、JSON 匯出/匯入。</p>
 
@@ -303,7 +303,7 @@
 
     <div class="card" style="grid-column: span 12;">
 		<div class="row" style="justify-content: space-between; align-items: center">
-			<div class="secTitle">產業池</div>
+			<div class="secTitle">產業池（股票池）</div>
 			<div style="display: flex; gap: 8px;">
 				<button class="btn btn-muted" onclick="toggleAllStocks(true)">全部展開</button>
 				<button class="btn btn-muted" onclick="toggleAllStocks(false)">全部收合</button>
@@ -314,11 +314,11 @@
     </div>
 
     <div class="card" style="grid-column: span 6;">
-      <div class="secTitle">彙總：按產業池</div>
+      <div class="secTitle">總覽｜池</div>
       <table class="list" id="sum_pools"><thead><tr><th>池</th><th>預算</th><th>分配額度（合計）</th></tr></thead><tbody></tbody></table>
     </div>
 	<div class="card" style="grid-column: span 6;">
-	  <div class="secTitle">彙總：按 Tag</div>
+	  <div class="secTitle">總覽｜標籤</div>
 	  <table class="list" id="sum_tags"><thead><tr><th>Tag</th><th>分配額度（合計）</th><th>佔可用資金％</th></tr></thead><tbody></tbody></table>
 	</div>
   </div>
