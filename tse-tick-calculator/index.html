@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>當沖成本與回本 Tick 數計算機</title>
+    <style>
+        body {
+            font-family: '微軟正黑體', sans-serif;
+            background-color: #f4f4f4;
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .container {
+            max-width: 900px;
+            width: 100%;
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+
+        h1 {
+            text-align: center;
+            color: #333;
+        }
+
+        .controls {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+            background-color: #E1EFEF;
+            padding: 20px;
+            border-radius: 8px;
+            border-bottom: 3px solid #E60478;
+        }
+
+        .input-group {
+            display: flex;
+            flex-direction: column;
+        }
+
+        label {
+            font-weight: bold;
+            margin-bottom: 5px;
+            color: #00A19B;
+        }
+
+        input {
+            padding: 8px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            font-size: 16px;
+            text-align: center;
+        }
+
+        /* 表格樣式仿照原圖 */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+        }
+
+        thead tr {
+            background-color: #00A19B;
+            color: white;
+            border-bottom: 3px solid #E60478;
+        }
+
+        th {
+            padding: 12px;
+            font-size: 1.1rem;
+            font-weight: bold;
+            text-align: center;
+            border-right: 1px solid #BFBFBF;
+        }
+
+        th:last-child {
+            border-right: none;
+        }
+
+        tbody tr {
+            border-bottom: 1px solid #BFBFBF;
+        }
+
+        tbody tr:nth-child(even) {
+            background-color: #FAFAFA;
+        }
+
+        tbody tr:nth-child(odd) {
+            background-color: #E1EFEF;
+        }
+
+        td {
+            padding: 10px;
+            text-align: center;
+            font-size: 1.1rem;
+            color: #333;
+            border-right: 1px solid #BFBFBF;
+        }
+
+        td:last-child {
+            border-right: none;
+        }
+
+        /* 強調 1 Tick 就回本的顏色 (紅色) */
+        .highlight {
+            color: red;
+            font-weight: bold;
+        }
+
+        .note {
+            margin-top: 10px;
+            font-size: 0.9rem;
+            color: #666;
+            text-align: right;
+        }
+        
+        @media (max-width: 600px) {
+            th, td {
+                font-size: 0.9rem;
+                padding: 8px;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h1>當沖成本與回本 Tick 數計算機</h1>
+        
+        <div class="controls">
+            <div class="input-group">
+                <label for="discount">手續費折數 (例如 2.8 折輸入 2.8)</label>
+                <input type="number" id="discount" value="2.8" step="0.1" oninput="calculateTable()">
+            </div>
+            <div class="input-group">
+                <label for="minFee">最低手續費 (每筆未滿多少元以多少計)</label>
+                <input type="number" id="minFee" value="20" step="1" oninput="calculateTable()">
+            </div>
+        </div>
+
+        <table>
+            <thead>
+                <tr>
+                    <th>股價範圍</th>
+                    <th>區間內最高交易成本 (元)</th>
+                    <th>賺幾 Tick 可回本</th>
+                </tr>
+            </thead>
+            <tbody id="tableBody">
+                </tbody>
+        </table>
+        <div class="note">
+            * 計算公式：(買進手續費 + 賣出手續費 + 0.15% 交易稅)。<br>
+            * 手續費率 0.1425%，依輸入折數計算，單邊低於最低手續費以最低計算。
+        </div>
+    </div>
+
+    <script>
+        // 定義股價範圍與對應的 Tick 單位
+        // 為了符合您提供的表格樣式，我們手動定義每一個 Row 的上限與 Tick
+        const ranges = [
+            { label: "0 ~ 4.99", maxPrice: 4.99, tick: 0.01 },
+            { label: "5 ~ 9.99", maxPrice: 9.99, tick: 0.01 },
+            { label: "10 ~ 14.5", maxPrice: 14.5, tick: 0.05 },
+            { label: "15 ~ 19.95", maxPrice: 19.95, tick: 0.05 },
+            { label: "20 ~ 24.95", maxPrice: 24.95, tick: 0.05 },
+            { label: "25 ~ 29.95", maxPrice: 29.95, tick: 0.05 },
+            { label: "30 ~ 34.95", maxPrice: 34.95, tick: 0.05 },
+            { label: "35 ~ 39.95", maxPrice: 39.95, tick: 0.05 },
+            { label: "40 ~ 44.95", maxPrice: 44.95, tick: 0.05 },
+            { label: "45 ~ 49.95", maxPrice: 49.95, tick: 0.05 },
+            { label: "50 ~ 59.9", maxPrice: 59.9, tick: 0.1 },
+            { label: "60 ~ 69.9", maxPrice: 69.9, tick: 0.1 },
+            { label: "70 ~ 79.9", maxPrice: 79.9, tick: 0.1 },
+            { label: "80 ~ 89.9", maxPrice: 89.9, tick: 0.1 },
+            { label: "90 ~ 99.9", maxPrice: 99.9, tick: 0.1 },
+            { label: "100 ~ 149.5", maxPrice: 149.5, tick: 0.5 },
+            { label: "150 ~ 199.5", maxPrice: 199.5, tick: 0.5 },
+            { label: "200 ~ 299.5", maxPrice: 299.5, tick: 0.5 },
+            { label: "300 ~ 399.5", maxPrice: 399.5, tick: 0.5 },
+            { label: "400 ~ 499.5", maxPrice: 499.5, tick: 0.5 },
+            { label: "500 ~ 599", maxPrice: 599, tick: 1.0 },
+            { label: "600 ~ 699", maxPrice: 699, tick: 1.0 },
+            { label: "700 ~ 799", maxPrice: 799, tick: 1.0 },
+            { label: "800 ~ 899", maxPrice: 899, tick: 1.0 },
+            { label: "900 ~ 999", maxPrice: 999, tick: 1.0 },
+            { label: "1000 ~ 1495", maxPrice: 1495, tick: 5.0 },
+            { label: "1500 ~ 1995", maxPrice: 1995, tick: 5.0 },
+            { label: "2000 ~ 2495", maxPrice: 2495, tick: 5.0 },
+            { label: "2500 ~ 3000", maxPrice: 3000, tick: 5.0 }
+        ];
+
+        function calculateTable() {
+            const discountInput = document.getElementById('discount').value;
+            const minFeeInput = document.getElementById('minFee').value;
+            
+            // 轉換輸入值 (例如 2.8 折 -> 0.28)
+            const discount = parseFloat(discountInput) / 10;
+            const minFee = parseFloat(minFeeInput);
+            
+            const tbody = document.getElementById('tableBody');
+            tbody.innerHTML = ""; // 清空表格
+
+            ranges.forEach((range) => {
+                // 計算 1 張股票 (1000股) 的總成交金額 (以區間最高價計算)
+                const price = range.maxPrice;
+                const totalAmount = price * 1000;
+
+                // 計算單邊手續費：金額 * 0.1425% * 折數
+                let rawFee = totalAmount * 0.001425 * discount;
+                
+                // 取最低手續費 (Math.max)
+                let buyFee = Math.max(minFee, Math.floor(rawFee)); // 台灣券商通常無條件捨去小數點後再比低消，或四捨五入，此處採通用做法
+                let sellFee = Math.max(minFee, Math.floor(rawFee));
+
+                // 交易稅：金額 * 0.15% (當沖稅率)
+                let tax = Math.floor(totalAmount * 0.0015);
+
+                // 總成本
+                let totalCost = buyFee + sellFee + tax;
+
+                // 1 Tick 的價值 (1000股)
+                let tickValue = range.tick * 1000;
+
+                // 損益兩平需要的 Tick 數
+                // 例如成本 86 元，1 tick 賺 50 元 -> 86/50 = 1.72 -> 需要 2 ticks
+                let ticksNeeded = Math.ceil(totalCost / tickValue);
+
+                // 判斷是否高亮顯示 (如果是 1 tick 就紅色)
+                let rowClass = ticksNeeded === 1 ? 'highlight' : '';
+
+                // 建立表格行
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td class="${rowClass}"><strong>${range.label} 元</strong></td>
+                    <td class="${rowClass}">${totalCost} 元</td>
+                    <td class="${rowClass}">${ticksNeeded}</td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        // 初始化
+        calculateTable();
+    </script>
+</body>
+</html>
